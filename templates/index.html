@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Leaflet — AI-powered plant disease detection using deep learning" />
+  <title>Leaflet — Plant Disease Detection</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  <!-- Fallback for non-Flask local preview -->
+  <link rel="stylesheet" href="static/css/style.css" />
+</head>
+<body>
+
+<!-- =============================================
+     NAVIGATION
+     ============================================= -->
+<nav class="navbar" id="navbar" role="navigation" aria-label="Main navigation">
+  <div class="nav-inner">
+    <a href="#home" class="nav-logo" aria-label="Leaflet home">
+      <svg class="logo-icon" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+        <path d="M16 3C10 3 4 9 4 17c0 6 4 10 12 12 8-2 12-6 12-12C28 9 22 3 16 3Z" fill="currentColor" opacity="0.2"/>
+        <path d="M16 3C10 3 4 9 4 17c0 6 4 10 12 12 8-2 12-6 12-12C28 9 22 3 16 3Z" stroke="currentColor" stroke-width="1.6" fill="none"/>
+        <path d="M16 5v20M10 10c2 2 4 6 6 9M22 10c-2 2-4 6-6 9" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+      </svg>
+      <span class="logo-text">Leaf<em>let</em></span>
+    </a>
+
+    <button class="nav-toggle" id="navToggle" aria-label="Toggle menu" aria-expanded="false" aria-controls="navLinks">
+      <span></span><span></span><span></span>
+    </button>
+
+    <ul class="nav-links" id="navLinks" role="list">
+      <li><a href="#home" class="nav-link">Home</a></li>
+      <li><a href="#upload" class="nav-link">Detect</a></li>
+      <li><a href="#about" class="nav-link">About</a></li>
+      <li><a href="#how-it-works" class="nav-link">How it Works</a></li>
+      <li><a href="#contact" class="nav-link">Contact</a></li>
+    </ul>
+
+    <button class="dark-toggle" id="darkToggle" aria-label="Toggle dark mode" title="Toggle dark mode">
+      <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+        <circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke-linecap="round"/>
+      </svg>
+      <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+        <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" stroke-linecap="round"/>
+      </svg>
+    </button>
+  </div>
+</nav>
+
+<!-- =============================================
+     HERO
+     ============================================= -->
+<section class="hero" id="home" aria-label="Hero section">
+  <div class="hero-bg" aria-hidden="true">
+    <div class="hero-orb orb-1"></div>
+    <div class="hero-orb orb-2"></div>
+    <div class="hero-orb orb-3"></div>
+    <div class="hero-grid"></div>
+  </div>
+
+  <div class="hero-inner">
+    <div class="hero-content">
+      <div class="hero-badge">
+        <span class="badge-dot" aria-hidden="true"></span>
+        AI-Powered · Deep Learning · Real-time
+      </div>
+      <h1 class="hero-title">
+        Detect plant disease<br>
+        <em>before it spreads</em>
+      </h1>
+      <p class="hero-subtitle">
+        Upload a leaf photo and get an instant AI diagnosis — disease name, confidence score, and treatment recommendations in seconds.
+      </p>
+      <div class="hero-actions">
+        <a href="#upload" class="btn btn-primary ripple">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M10 14V4M5 9l5-5 5 5" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 16h14" stroke-linecap="round"/></svg>
+          Upload a leaf
+        </a>
+        <a href="#how-it-works" class="btn btn-ghost ripple">
+          How it works
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 10h12M10 4l6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+      </div>
+
+      <div class="hero-stats" aria-label="Key statistics">
+        <div class="stat">
+          <span class="stat-num">38</span>
+          <span class="stat-label">Disease classes</span>
+        </div>
+        <div class="stat-divider" aria-hidden="true"></div>
+        <div class="stat">
+          <span class="stat-num">14</span>
+          <span class="stat-label">Plant species</span>
+        </div>
+        <div class="stat-divider" aria-hidden="true"></div>
+        <div class="stat">
+          <span class="stat-num">CNN</span>
+          <span class="stat-label">Deep learning model</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="hero-visual" aria-hidden="true">
+      <div class="leaf-float">
+        <svg class="leaf-svg" viewBox="0 0 280 320" fill="none">
+          <defs>
+            <linearGradient id="leafGrad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#4ade80"/>
+              <stop offset="100%" stop-color="#16a34a"/>
+            </linearGradient>
+            <linearGradient id="leafGrad2" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#86efac"/>
+              <stop offset="100%" stop-color="#4ade80"/>
+            </linearGradient>
+          </defs>
+          <!-- Leaf body -->
+          <path d="M140 290 C60 240 20 180 30 100 C40 40 100 10 140 10 C180 10 240 40 250 100 C260 180 220 240 140 290Z" fill="url(#leafGrad)" opacity="0.9"/>
+          <!-- Veins -->
+          <path d="M140 290 L140 10" stroke="#15803d" stroke-width="2.5" opacity="0.4"/>
+          <path d="M140 200 C100 175 65 155 50 130" stroke="#15803d" stroke-width="1.5" opacity="0.4"/>
+          <path d="M140 200 C180 175 215 155 230 130" stroke="#15803d" stroke-width="1.5" opacity="0.4"/>
+          <path d="M140 155 C105 130 75 112 60 90" stroke="#15803d" stroke-width="1.2" opacity="0.35"/>
+          <path d="M140 155 C175 130 205 112 220 90" stroke="#15803d" stroke-width="1.2" opacity="0.35"/>
+          <path d="M140 115 C115 95 95 82 84 65" stroke="#15803d" stroke-width="1" opacity="0.3"/>
+          <path d="M140 115 C165 95 185 82 196 65" stroke="#15803d" stroke-width="1" opacity="0.3"/>
+          <!-- Highlight -->
+          <path d="M110 40 C95 60 85 90 85 120" stroke="url(#leafGrad2)" stroke-width="8" stroke-linecap="round" opacity="0.35"/>
+        </svg>
+        <!-- Scan line animation -->
+        <div class="scan-line"></div>
+        <!-- Corner brackets -->
+        <div class="corner tl"></div>
+        <div class="corner tr"></div>
+        <div class="corner bl"></div>
+        <div class="corner br"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =============================================
+     UPLOAD SECTION
+     ============================================= -->
+<section class="section upload-section" id="upload" aria-label="Upload leaf image">
+  <div class="container">
+    <div class="section-header">
+      <p class="section-eyebrow">Step 01</p>
+      <h2 class="section-title">Upload your leaf</h2>
+      <p class="section-sub">Drag a photo onto the zone below, or click to browse. The clearer the image, the sharper the diagnosis.</p>
+    </div>
+
+    <!-- Flask form wraps upload + prediction result together -->
+    <form action="/predict" method="POST" enctype="multipart/form-data" id="uploadForm" novalidate>
+
+      <!-- Upload zone (hidden after image selected) -->
+      <div class="upload-zone" id="uploadZone" role="button" tabindex="0"
+           aria-label="Drag and drop leaf image, or press Enter to browse"
+           aria-describedby="uploadFormats">
+        <input type="file" name="image" id="fileInput" accept=".jpg,.jpeg,.png" aria-label="Choose image file" />
+        <div class="upload-idle" id="uploadIdle">
+          <div class="upload-icon-wrap" aria-hidden="true">
+            <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.4">
+              <path d="M24 32V16M16 24l8-8 8 8" stroke-linecap="round" stroke-linejoin="round"/>
+              <rect x="6" y="6" width="36" height="36" rx="8"/>
+              <path d="M14 38h20" stroke-linecap="round" opacity="0.5"/>
+            </svg>
+          </div>
+          <h3>Drop your leaf photo here</h3>
+          <p>or <span class="browse-link">click to browse</span></p>
+          <p class="upload-formats" id="uploadFormats">Accepts JPG · JPEG · PNG</p>
+        </div>
+        <div class="upload-drag-hint" id="dragHint" aria-live="polite">Release to upload</div>
+      </div>
+
+      <!-- Preview card (shown after image selected) -->
+      <div class="preview-card" id="previewCard" style="display:none;" aria-live="polite">
+        <div class="preview-image-wrap">
+          <img id="previewImg" src="" alt="Selected leaf preview" class="preview-img" />
+          <div class="preview-badge">
+            <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><circle cx="8" cy="8" r="8"/><path d="M5 8l2 2 4-4" stroke="white" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Ready
+          </div>
+        </div>
+        <div class="preview-meta">
+          <h3 class="preview-filename" id="previewName">—</h3>
+          <div class="preview-details">
+            <span class="meta-pill" id="previewSize">—</span>
+            <span class="meta-pill" id="previewRes">—</span>
+          </div>
+          <div class="preview-actions">
+            <button type="button" class="btn btn-outline" id="changeBtn" aria-label="Change image">
+              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 12V8a4 4 0 0 1 4-4h4M8 16h8a4 4 0 0 0 4-4V8M15 5l2-2-2-2M5 17l-2 2 2 2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Change
+            </button>
+            <button type="button" class="btn btn-outline btn-danger" id="removeBtn" aria-label="Remove image">
+              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15" stroke-linecap="round"/></svg>
+              Remove
+            </button>
+            <button type="submit" class="btn btn-primary ripple" id="predictBtn">
+              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="10" cy="10" r="8"/><path d="M10 6v4l3 3" stroke-linecap="round"/></svg>
+              Detect disease
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </form><!-- /uploadForm -->
+
+    <!-- =============================================
+         LOADING STATE (shown by JS while form submits)
+         ============================================= -->
+    <div class="loading-section" id="loadingSection" style="display:none;" aria-live="polite" aria-label="Loading">
+      <div class="loading-card">
+        <div class="spinner" aria-hidden="true">
+          <div class="spinner-ring"></div>
+          <div class="spinner-leaf" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C7 2 3 6 3 12c0 5 4 9 9 10 5-1 9-5 9-10C21 6 17 2 12 2Z"/></svg>
+          </div>
+        </div>
+        <p class="loading-title">Analyzing leaf…</p>
+        <p class="loading-sub">AI model is detecting disease patterns</p>
+        <div class="loading-steps" aria-label="Analysis steps">
+          <div class="load-step active" id="step1">Preprocessing image</div>
+          <div class="load-step" id="step2">Extracting features</div>
+          <div class="load-step" id="step3">Running inference</div>
+          <div class="load-step" id="step4">Preparing results</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- =============================================
+         PREDICTION RESULT (Flask renders this)
+         ============================================= -->
+    {% if disease %}
+    <div class="result-section" id="resultSection" aria-label="Prediction result">
+
+      <!-- Main result card -->
+      <div class="result-hero-card {% if info.is_healthy %}result-healthy{% else %}result-disease{% endif %}">
+        <div class="result-image-wrap">
+          <img src="{{ uploaded_image }}" alt="Analyzed leaf" class="result-img" />
+          <div class="result-img-label">Analyzed image</div>
+        </div>
+
+        <div class="result-details">
+          <div class="result-status-badge {% if info.is_healthy %}badge-healthy{% else %}badge-disease{% endif %}">
+            {% if info.is_healthy %}
+              ✅ Healthy Plant
+            {% else %}
+              ⚠️ Disease Detected
+            {% endif %}
+          </div>
+
+          <h2 class="result-disease-name">{{ info.display_name }}</h2>
+          <p class="result-plant">Plant: <strong>{{ info.plant }}</strong></p>
+
+          {% if not info.is_healthy %}
+          <div class="result-severity severity-{{ info.severity | lower }}">
+            Severity: {{ info.severity }}
+          </div>
+          {% endif %}
+
+          <div class="confidence-block">
+            <div class="confidence-label-row">
+              <span>Model confidence</span>
+              <span class="confidence-value" id="confValue">{{ confidence }}%</span>
+            </div>
+            <div class="confidence-track" role="progressbar" aria-valuenow="{{ confidence }}" aria-valuemin="0" aria-valuemax="100" aria-label="Confidence {{ confidence }}%">
+              <div class="confidence-fill" id="confFill" data-target="{{ confidence }}"></div>
+            </div>
+          </div>
+
+          <div class="result-cause">
+            <span class="cause-label">Cause</span>
+            <span class="cause-text">{{ info.cause }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Info cards grid -->
+      <div class="info-grid">
+
+        <!-- Symptoms -->
+        {% if not info.is_healthy %}
+        <div class="info-card">
+          <div class="info-card-icon" aria-hidden="true">⚠️</div>
+          <h3 class="info-card-title">Symptoms</h3>
+          <p class="info-card-text">{{ info.symptoms }}</p>
+        </div>
+        {% endif %}
+
+        <!-- Treatment -->
+        {% if not info.is_healthy %}
+        <div class="info-card">
+          <div class="info-card-icon" aria-hidden="true">💊</div>
+          <h3 class="info-card-title">Treatment</h3>
+          <p class="info-card-text">{{ info.treatment }}</p>
+          <div class="treatment-tags">
+            <span class="tag tag-organic">🌿 Organic options available</span>
+            <span class="tag tag-chemical">⚗️ Chemical control</span>
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- Prevention -->
+        <div class="info-card">
+          <div class="info-card-icon" aria-hidden="true">🛡️</div>
+          <h3 class="info-card-title">Prevention</h3>
+          <p class="info-card-text">{{ info.prevention }}</p>
+        </div>
+
+        <!-- Spread -->
+        {% if not info.is_healthy %}
+        <div class="info-card">
+          <div class="info-card-icon" aria-hidden="true">🔄</div>
+          <h3 class="info-card-title">How it spreads</h3>
+          <p class="info-card-text">{{ info.spread }}</p>
+        </div>
+        {% endif %}
+
+        <!-- Healthy tips card -->
+        {% if info.is_healthy %}
+        <div class="info-card info-card-healthy">
+          <div class="info-card-icon" aria-hidden="true">🌱</div>
+          <h3 class="info-card-title">Maintenance tips</h3>
+          <p class="info-card-text">{{ info.prevention }}</p>
+        </div>
+        {% endif %}
+
+      </div><!-- /info-grid -->
+
+      <!-- Reset button -->
+      <div class="result-reset">
+        <a href="#upload" class="btn btn-primary ripple" id="analyzeAnother">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 10h12M10 4l6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Analyze another leaf
+        </a>
+      </div>
+
+    </div><!-- /result-section -->
+    {% endif %}
+
+  </div>
+</section>
+
+<!-- =============================================
+     ABOUT SECTION
+     ============================================= -->
+<section class="section about-section" id="about" aria-label="About">
+  <div class="container">
+    <div class="about-grid">
+      <div class="about-content">
+        <p class="section-eyebrow">About the project</p>
+        <h2 class="section-title">How AI reads a leaf</h2>
+        <p class="about-text">
+          Leaflet uses a Convolutional Neural Network trained on the PlantVillage dataset — over 87,000 images across 38 disease categories and 14 plant species. The model learns visual patterns in leaf texture, color gradients, and lesion geometry that the human eye easily misses.
+        </p>
+        <p class="about-text">
+          Each image goes through preprocessing, feature extraction across multiple convolutional layers, and a final softmax classifier that returns a probability distribution across all 38 classes. The highest-probability class and its confidence are surfaced to you, along with agronomic information to act on.
+        </p>
+        <div class="tech-stack">
+          <div class="tech-item">
+            <span class="tech-icon">🧠</span>
+            <div>
+              <strong>TensorFlow / Keras</strong>
+              <span>Model training &amp; inference</span>
+            </div>
+          </div>
+          <div class="tech-item">
+            <span class="tech-icon">🌐</span>
+            <div>
+              <strong>Flask</strong>
+              <span>Python web backend</span>
+            </div>
+          </div>
+          <div class="tech-item">
+            <span class="tech-icon">🖼️</span>
+            <div>
+              <strong>CNN Architecture</strong>
+              <span>Deep learning image classifier</span>
+            </div>
+          </div>
+          <div class="tech-item">
+            <span class="tech-icon">💻</span>
+            <div>
+              <strong>HTML · CSS · JS</strong>
+              <span>Pure vanilla frontend</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="about-visual" aria-hidden="true">
+        <div class="cnn-diagram">
+          <div class="cnn-layer" data-label="Input 128×128">
+            <div class="cnn-block input-block"></div>
+          </div>
+          <div class="cnn-arrow">→</div>
+          <div class="cnn-layer" data-label="Conv layers">
+            <div class="cnn-block conv-block"></div>
+            <div class="cnn-block conv-block"></div>
+            <div class="cnn-block conv-block"></div>
+          </div>
+          <div class="cnn-arrow">→</div>
+          <div class="cnn-layer" data-label="Feature maps">
+            <div class="cnn-block feat-block"></div>
+            <div class="cnn-block feat-block"></div>
+            <div class="cnn-block feat-block"></div>
+            <div class="cnn-block feat-block"></div>
+            <div class="cnn-block feat-block"></div>
+          </div>
+          <div class="cnn-arrow">→</div>
+          <div class="cnn-layer" data-label="38 classes">
+            <div class="cnn-block out-block"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =============================================
+     HOW IT WORKS
+     ============================================= -->
+<section class="section how-section" id="how-it-works" aria-label="How it works">
+  <div class="container">
+    <div class="section-header">
+      <p class="section-eyebrow">The process</p>
+      <h2 class="section-title">From leaf to diagnosis in 5 steps</h2>
+    </div>
+    <div class="timeline">
+      <div class="timeline-item" data-step="1">
+        <div class="timeline-icon" aria-hidden="true">📷</div>
+        <div class="timeline-content">
+          <h3>Upload leaf photo</h3>
+          <p>Drag &amp; drop or browse a JPG/PNG image of any leaf. Close-up shots in natural light work best.</p>
+        </div>
+      </div>
+      <div class="timeline-connector" aria-hidden="true"></div>
+      <div class="timeline-item" data-step="2">
+        <div class="timeline-icon" aria-hidden="true">⚙️</div>
+        <div class="timeline-content">
+          <h3>AI preprocessing</h3>
+          <p>The image is resized to 128×128, normalized to [0,1], and passed into the model pipeline.</p>
+        </div>
+      </div>
+      <div class="timeline-connector" aria-hidden="true"></div>
+      <div class="timeline-item" data-step="3">
+        <div class="timeline-icon" aria-hidden="true">🧠</div>
+        <div class="timeline-content">
+          <h3>Deep learning inference</h3>
+          <p>The CNN extracts visual features — texture, color gradients, lesion patterns — through its convolutional layers.</p>
+        </div>
+      </div>
+      <div class="timeline-connector" aria-hidden="true"></div>
+      <div class="timeline-item" data-step="4">
+        <div class="timeline-icon" aria-hidden="true">📊</div>
+        <div class="timeline-content">
+          <h3>Disease prediction</h3>
+          <p>A softmax classifier assigns probabilities across all 38 classes. The highest-confidence class is selected.</p>
+        </div>
+      </div>
+      <div class="timeline-connector" aria-hidden="true"></div>
+      <div class="timeline-item" data-step="5">
+        <div class="timeline-icon" aria-hidden="true">💊</div>
+        <div class="timeline-content">
+          <h3>Treatment recommendations</h3>
+          <p>The predicted class is matched to a curated knowledge base with symptoms, treatment, and prevention advice.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =============================================
+     CONTACT SECTION
+     ============================================= -->
+<section class="section contact-section" id="contact" aria-label="Contact">
+  <div class="container">
+    <div class="section-header">
+      <p class="section-eyebrow">Get in touch</p>
+      <h2 class="section-title">Have questions?</h2>
+      <p class="section-sub">Reach out about the project, suggest improvements, or report an incorrect diagnosis.</p>
+    </div>
+    <div class="contact-cards">
+      <a href="https://github.com" target="_blank" rel="noopener" class="contact-card" aria-label="GitHub profile">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2C6.48 2 2 6.48 2 12c0 4.42 2.87 8.17 6.84 9.49.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.45-1.15-1.1-1.46-1.1-1.46-.9-.62.07-.6.07-.6 1 .07 1.52 1.02 1.52 1.02.89 1.52 2.34 1.08 2.91.83.09-.65.35-1.08.63-1.33-2.22-.25-4.56-1.11-4.56-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.64 0 0 .84-.27 2.75 1.02A9.56 9.56 0 0 1 12 6.8c.85 0 1.71.11 2.51.33 1.91-1.29 2.75-1.02 2.75-1.02.55 1.37.2 2.39.1 2.64.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.69-4.57 4.94.36.31.68.92.68 1.85v2.74c0 .27.18.58.69.48A10.01 10.01 0 0 0 22 12c0-5.52-4.48-10-10-10Z"/></svg>
+        <span>GitHub</span>
+      </a>
+      <a href="https://linkedin.com" target="_blank" rel="noopener" class="contact-card" aria-label="LinkedIn profile">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.45 20.45h-3.55v-5.57c0-1.33-.03-3.04-1.85-3.04-1.85 0-2.14 1.45-2.14 2.94v5.67H9.35V9h3.41v1.56h.05c.47-.9 1.63-1.85 3.36-1.85 3.6 0 4.26 2.37 4.26 5.45v6.29ZM5.34 7.43a2.06 2.06 0 1 1 0-4.12 2.06 2.06 0 0 1 0 4.12ZM3.56 20.45h3.55V9H3.56v11.45Z"/></svg>
+        <span>LinkedIn</span>
+      </a>
+      <a href="mailto:your@email.com" class="contact-card" aria-label="Send email">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 7 10-7" stroke-linecap="round"/></svg>
+        <span>Email</span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- =============================================
+     FOOTER
+     ============================================= -->
+<footer class="footer" role="contentinfo">
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <svg class="logo-icon" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+        <path d="M16 3C10 3 4 9 4 17c0 6 4 10 12 12 8-2 12-6 12-12C28 9 22 3 16 3Z" fill="currentColor" opacity="0.3"/>
+        <path d="M16 3C10 3 4 9 4 17c0 6 4 10 12 12 8-2 12-6 12-12C28 9 22 3 16 3Z" stroke="currentColor" stroke-width="1.6" fill="none"/>
+        <path d="M16 5v20M10 10c2 2 4 6 6 9M22 10c-2 2-4 6-6 9" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+      </svg>
+      <span>Leaf<em>let</em></span>
+    </div>
+    <p class="footer-copy">Built with TensorFlow, Flask &amp; vanilla JS · PlantVillage dataset · 38 disease classes</p>
+    <p class="footer-dev">Crafted by <strong>Abhijeet</strong> &copy; <span id="footerYear"></span></p>
+  </div>
+</footer>
+
+<script src="{{ url_for('static', filename='script.js') }}"></script>
+<!-- Fallback for non-Flask local preview -->
+<script src="static/js/script.js"></script>
+</body>
+</html>

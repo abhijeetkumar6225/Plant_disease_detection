@@ -1,0 +1,1330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Leaflet — Plant Disease Detection</title>
+<style>
+
+/* ============================================================
+   LEAFLET — Plant Disease Detection AI
+   Single-file vanilla HTML/CSS/JS frontend
+   ============================================================ */
+
+/* ---------- Design tokens ---------- */
+:root{
+  /* Core botanical palette */
+  --hero-deep:        #14532d;
+  --hero-deeper:       #0d3c20;
+  --canopy:            #1f6b3a;
+  --moss:              #5c8a52;
+  --soil:              #6b4423;
+  --bloom-red:         #b3422f;
+  --bloom-red-soft:    #d97757;
+  --parchment:         #faf7f0;
+  --parchment-dim:     #f1ece1;
+  --ink:               #1c2a1f;
+  --ink-soft:          #4a5a4d;
+  --line:              #e2dccb;
+  --line-strong:       #c9c0a8;
+  --card-bg:           #ffffff;
+  --card-bg-alt:       #fffdf8;
+
+  /* Spacing scale */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+  --space-8: 4.5rem;
+
+  /* Type */
+  --font-display: 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif;
+  --font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+
+  /* Misc */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --shadow-card: 0 1px 2px rgba(20,83,45,0.06), 0 8px 24px -12px rgba(20,83,45,0.18);
+  --shadow-card-hover: 0 1px 2px rgba(20,83,45,0.08), 0 16px 32px -12px rgba(20,83,45,0.28);
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (prefers-color-scheme: dark){
+  :root{
+    --hero-deep:        #0c2917;
+    --hero-deeper:       #07190d;
+    --canopy:            #2f7a4a;
+    --moss:              #7da872;
+    --parchment:         #16201a;
+    --parchment-dim:     #11160f;
+    --ink:               #e8ecdf;
+    --ink-soft:          #a9b6a3;
+    --line:              #2a3528;
+    --line-strong:       #3c4a38;
+    --card-bg:           #1b261c;
+    --card-bg-alt:       #1f2b21;
+    --shadow-card: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px -12px rgba(0,0,0,0.5);
+    --shadow-card-hover: 0 1px 2px rgba(0,0,0,0.35), 0 16px 32px -12px rgba(0,0,0,0.6);
+  }
+}
+
+*{ box-sizing: border-box; }
+
+html{ scroll-behavior: smooth; }
+
+body{
+  margin: 0;
+  font-family: var(--font-body);
+  background: var(--parchment-dim);
+  color: var(--ink);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+@media (prefers-reduced-motion: reduce){
+  *, *::before, *::after{
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+:focus-visible{
+  outline: 2px solid var(--bloom-red-soft);
+  outline-offset: 3px;
+  border-radius: var(--radius-sm);
+}
+
+img{ max-width: 100%; display: block; }
+
+/* ============================================================
+   HERO
+   ============================================================ */
+.hero{
+  position: relative;
+  background: linear-gradient(165deg, var(--hero-deep) 0%, var(--hero-deeper) 100%);
+  color: var(--parchment);
+  padding: var(--space-7) var(--space-5) var(--space-8);
+  overflow: hidden;
+  isolation: isolate;
+}
+
+/* Leaf vein motif — signature element, etched faintly into the hero */
+.hero-veins{
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  opacity: 0.16;
+  pointer-events: none;
+}
+.hero-veins svg{ width: 100%; height: 100%; }
+
+/* Floating leaf particles — ambient, restrained */
+.leaf-particles{
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+.leaf-particle{
+  position: absolute;
+  opacity: 0.5;
+  animation: drift linear infinite;
+  color: var(--moss);
+}
+@keyframes drift{
+  0%   { transform: translateY(110%) translateX(0) rotate(0deg); opacity: 0; }
+  10%  { opacity: 0.45; }
+  90%  { opacity: 0.45; }
+  100% { transform: translateY(-20%) translateX(var(--drift-x, 30px)) rotate(var(--drift-r, 180deg)); opacity: 0; }
+}
+
+.hero-inner{
+  position: relative;
+  z-index: 1;
+  max-width: 1120px;
+  margin: 0 auto;
+}
+
+.eyebrow-row{
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.live-badge{
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0.4rem 0.8rem;
+  background: rgba(250,247,240,0.08);
+  border: 1px solid rgba(250,247,240,0.18);
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #d7e8d0;
+}
+
+.pulse-dot{
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #6fcf72;
+  position: relative;
+  flex-shrink: 0;
+}
+.pulse-dot::after{
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: #6fcf72;
+  animation: pulse 2s var(--ease) infinite;
+}
+@keyframes pulse{
+  0%   { transform: scale(1); opacity: 0.7; }
+  70%  { transform: scale(3); opacity: 0; }
+  100% { transform: scale(3); opacity: 0; }
+}
+
+.hero h1{
+  font-family: var(--font-display);
+  font-size: clamp(2.4rem, 5vw, 3.6rem);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin: 0 0 var(--space-3);
+  max-width: 14ch;
+}
+.hero h1 em{
+  font-style: italic;
+  color: #a8d49d;
+}
+
+.hero p.subtitle{
+  font-size: 1.05rem;
+  color: #c9dcc3;
+  max-width: 46ch;
+  margin: 0;
+}
+
+/* ============================================================
+   CONFIG BAR
+   ============================================================ */
+.config-bar{
+  max-width: 1120px;
+  margin: -1.75rem auto 0;
+  position: relative;
+  z-index: 2;
+  padding: 0 var(--space-5);
+}
+
+.config-card{
+  background: var(--card-bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+  padding: var(--space-4) var(--space-5);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.config-label{
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+
+.config-card input[type="text"]{
+  flex: 1 1 240px;
+  min-width: 0;
+  padding: 0.6rem 0.85rem;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  background: var(--parchment-dim);
+  color: var(--ink);
+  transition: border-color 0.2s var(--ease), box-shadow 0.2s var(--ease);
+}
+.config-card input[type="text"]::placeholder{ color: var(--ink-soft); opacity: 0.6; }
+.config-card input[type="text"]:focus{
+  border-color: var(--canopy);
+  box-shadow: 0 0 0 3px rgba(31,107,58,0.12);
+}
+
+.btn{
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  font-weight: 600;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 0.65rem 1.2rem;
+  cursor: pointer;
+  transition: transform 0.15s var(--ease), box-shadow 0.15s var(--ease), background 0.15s var(--ease);
+  white-space: nowrap;
+}
+.btn:active{ transform: scale(0.97); }
+
+.btn-primary{
+  background: var(--canopy);
+  color: #fff;
+}
+.btn-primary:hover{ background: var(--hero-deep); box-shadow: 0 4px 14px -4px rgba(20,83,45,0.4); }
+
+.btn-secondary{
+  background: transparent;
+  color: var(--canopy);
+  border: 1px solid var(--line-strong);
+}
+.btn-secondary:hover{ border-color: var(--canopy); background: rgba(31,107,58,0.06); }
+
+.config-status{
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  color: var(--moss);
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  opacity: 0;
+  transition: opacity 0.3s var(--ease);
+}
+.config-status.visible{ opacity: 1; }
+
+/* ============================================================
+   MAIN LAYOUT
+   ============================================================ */
+main{
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: var(--space-7) var(--space-5) var(--space-6);
+}
+
+.workspace{
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-5);
+}
+@media (min-width: 860px){
+  .workspace{ grid-template-columns: 1fr 1fr; align-items: start; }
+}
+
+.card{
+  background: var(--card-bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+
+.card-header{
+  padding: var(--space-5) var(--space-5) var(--space-4);
+  border-bottom: 1px solid var(--line);
+}
+.card-header .card-eyebrow{
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--moss);
+  margin: 0 0 0.3rem;
+}
+.card-header h2{
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  margin: 0;
+  color: var(--ink);
+}
+
+.card-body{ padding: var(--space-5); }
+
+/* ---------- Upload zone ---------- */
+.upload-zone{
+  border: 2px dashed var(--line-strong);
+  border-radius: var(--radius-md);
+  padding: var(--space-7) var(--space-4);
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s var(--ease), background 0.2s var(--ease);
+  position: relative;
+  background: var(--parchment-dim);
+}
+.upload-zone:hover{ border-color: var(--moss); }
+.upload-zone.drag-over{
+  border-color: var(--canopy);
+  background: rgba(31,107,58,0.07);
+}
+.upload-zone.has-image{
+  padding: var(--space-4);
+  cursor: default;
+  border-style: solid;
+}
+
+.upload-zone input[type="file"]{
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.upload-zone.has-image input[type="file"]{ display: none; }
+
+.upload-icon{
+  width: 44px;
+  height: 44px;
+  margin: 0 auto var(--space-3);
+  color: var(--moss);
+}
+
+.upload-zone h3{
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  margin: 0 0 var(--space-1);
+  color: var(--ink);
+}
+.upload-zone p{
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+  margin: 0;
+}
+
+.preview-wrap{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+}
+.preview-img{
+  max-height: 280px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  object-fit: contain;
+}
+.preview-filename{
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+  word-break: break-all;
+  text-align: center;
+}
+.preview-actions{
+  display: flex;
+  gap: var(--space-2);
+}
+
+.upload-footer{
+  padding: 0 var(--space-5) var(--space-5);
+}
+
+.analyze-btn{
+  width: 100%;
+  padding: 0.85rem;
+  font-size: 0.95rem;
+  border-radius: var(--radius-sm);
+  background: var(--canopy);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s var(--ease), transform 0.15s var(--ease), opacity 0.15s var(--ease);
+}
+.analyze-btn:hover:not(:disabled){ background: var(--hero-deep); }
+.analyze-btn:active:not(:disabled){ transform: scale(0.985); }
+.analyze-btn:disabled{
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ============================================================
+   RESULTS CARD
+   ============================================================ */
+.results-stage{
+  perspective: 1400px;
+  min-height: 380px;
+  display: flex;
+  flex-direction: column;
+}
+
+.results-flip{
+  flex: 1;
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.7s var(--ease);
+}
+.results-flip.flipped{ transform: rotateY(180deg); }
+
+.flip-face{
+  backface-visibility: hidden;
+  position: relative;
+  width: 100%;
+}
+.flip-front{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 340px;
+  gap: var(--space-3);
+}
+.flip-back{
+  position: absolute;
+  inset: 0;
+  transform: rotateY(180deg);
+}
+
+/* Empty state */
+.empty-state{
+  text-align: center;
+  color: var(--ink-soft);
+  padding: var(--space-6) var(--space-4);
+}
+.empty-state svg{ width: 48px; height: 48px; margin: 0 auto var(--space-3); color: var(--line-strong); }
+.empty-state p{ font-size: 0.9rem; margin: 0; max-width: 28ch; margin-inline: auto; }
+
+/* Loading state */
+.loading-state{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-6) var(--space-4);
+}
+.spinner{
+  width: 38px;
+  height: 38px;
+  border: 3px solid var(--line);
+  border-top-color: var(--canopy);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin{ to{ transform: rotate(360deg); } }
+.loading-state p{
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+  margin: 0;
+}
+
+/* Error state */
+.error-state{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-6) var(--space-4);
+  text-align: center;
+}
+.error-state svg{ width: 40px; height: 40px; color: var(--bloom-red); }
+.error-state h3{
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  margin: 0;
+  color: var(--ink);
+}
+.error-state p{
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+  margin: 0;
+  max-width: 32ch;
+}
+
+/* Result content */
+.result-content{ padding: var(--space-5); }
+
+.result-headline{
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+}
+.disease-icon{
+  width: 52px;
+  height: 52px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 1.6rem;
+}
+.disease-icon.healthy{ background: rgba(31,107,58,0.12); }
+.disease-icon.diseased{ background: rgba(179,66,47,0.12); }
+
+.result-headline h3{
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  margin: 0 0 0.15rem;
+  color: var(--ink);
+}
+.result-headline .result-sub{
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  color: var(--ink-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.confidence-block{ margin-bottom: var(--space-5); }
+.confidence-row{
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: var(--space-2);
+}
+.confidence-row span:first-child{
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+  font-weight: 600;
+}
+.confidence-row .confidence-pct{
+  font-family: var(--font-mono);
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.confidence-track{
+  width: 100%;
+  height: 10px;
+  background: var(--line);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.confidence-fill{
+  height: 100%;
+  width: 0%;
+  border-radius: 999px;
+  transition: width 1s var(--ease);
+}
+.confidence-fill.healthy{ background: linear-gradient(90deg, var(--moss), var(--canopy)); }
+.confidence-fill.diseased{ background: linear-gradient(90deg, var(--bloom-red-soft), var(--bloom-red)); }
+
+.predictions-list h4{
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin: 0 0 var(--space-3);
+}
+
+.prediction-row{
+  display: grid;
+  grid-template-columns: minmax(0,1fr) 3rem;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-2);
+}
+.prediction-name{
+  font-size: 0.82rem;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.prediction-track{
+  grid-column: 1 / -1;
+  height: 5px;
+  background: var(--line);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-top: -0.3rem;
+  margin-bottom: var(--space-2);
+}
+.prediction-fill{
+  height: 100%;
+  width: 0%;
+  background: var(--moss);
+  border-radius: 999px;
+  transition: width 0.9s var(--ease);
+}
+.prediction-pct{
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+  text-align: right;
+}
+
+.result-footer-actions{
+  margin-top: var(--space-5);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--line);
+}
+
+/* ============================================================
+   TIPS SECTION
+   ============================================================ */
+.tips-section{
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0 var(--space-5) var(--space-7);
+}
+.tips-header{ margin-bottom: var(--space-5); }
+.tips-header .card-eyebrow{
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--moss);
+  margin: 0 0 0.3rem;
+}
+.tips-header h2{
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  margin: 0;
+}
+
+.tips-grid{
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-4);
+}
+@media (min-width: 700px){
+  .tips-grid{ grid-template-columns: repeat(3, 1fr); }
+}
+
+.tip-card{
+  background: var(--card-bg-alt);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: var(--space-5);
+  transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease), border-color 0.2s var(--ease);
+}
+.tip-card:hover{
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-card-hover);
+  border-color: var(--moss);
+}
+.tip-card .tip-icon{
+  width: 34px;
+  height: 34px;
+  color: var(--canopy);
+  margin-bottom: var(--space-3);
+}
+.tip-card h3{
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  margin: 0 0 var(--space-2);
+}
+.tip-card p{
+  font-size: 0.86rem;
+  color: var(--ink-soft);
+  margin: 0;
+  line-height: 1.6;
+}
+
+/* ============================================================
+   FOOTER
+   ============================================================ */
+footer{
+  background: var(--hero-deeper);
+  color: #aec4a6;
+  padding: var(--space-6) var(--space-5);
+}
+.footer-inner{
+  max-width: 1120px;
+  margin: 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+.footer-brand{
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  color: var(--parchment);
+}
+.footer-brand span{ color: #8fc183; }
+
+.stack-pills{
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.pill{
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid rgba(174,196,166,0.25);
+  color: #c4d8bd;
+}
+
+/* Utility */
+.sr-only{
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  white-space: nowrap;
+  border: 0;
+}
+
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     HERO
+     ============================================================ -->
+<header class="hero">
+  <div class="hero-veins" aria-hidden="true">
+    <svg viewBox="0 0 1200 500" preserveAspectRatio="xMidYMid slice" fill="none">
+      <path d="M -50 250 Q 250 100 600 250 T 1250 250" stroke="#faf7f0" stroke-width="1.5"/>
+      <path d="M 100 250 Q 150 180 250 150" stroke="#faf7f0" stroke-width="1"/>
+      <path d="M 200 250 Q 260 320 360 360" stroke="#faf7f0" stroke-width="1"/>
+      <path d="M 350 240 Q 410 160 500 130" stroke="#faf7f0" stroke-width="1"/>
+      <path d="M 450 250 Q 510 330 600 380" stroke="#faf7f0" stroke-width="1"/>
+      <path d="M 650 245 Q 720 170 820 145" stroke="#faf7f0" stroke-width="1"/>
+      <path d="M 750 250 Q 810 320 900 360" stroke="#faf7f0" stroke-width="1"/>
+      <path d="M 900 240 Q 970 165 1080 140" stroke="#faf7f0" stroke-width="1"/>
+      <path d="M 950 250 Q 1010 320 1100 355" stroke="#faf7f0" stroke-width="1"/>
+    </svg>
+  </div>
+  <div class="leaf-particles" id="leafParticles" aria-hidden="true"></div>
+
+  <div class="hero-inner">
+    <div class="eyebrow-row">
+      <span class="live-badge"><span class="pulse-dot"></span> AI Powered · Live Inference</span>
+    </div>
+    <h1>Leaflet reads what your <em>plants</em> are telling you</h1>
+    <p class="subtitle">Upload a photo of a leaf and get an instant disease diagnosis, powered by a convolutional model trained on field imagery.</p>
+  </div>
+</header>
+
+<!-- ============================================================
+     CONFIG BAR
+     ============================================================ -->
+{% endcomment %} <div class="config-bar">
+  <div class="config-card">
+    <label class="config-label" for="apiUrlInput">API Endpoint</label>
+    <input type="text" id="apiUrlInput" placeholder="https://your-ngrok-url.ngrok-free.app" autocomplete="off" spellcheck="false">
+    <button class="btn btn-primary" id="saveUrlBtn">Save</button>
+    <span class="config-status" id="configStatus">✓ Saved</span>
+  </div>
+</div> {% endcomment %}
+
+<!-- ============================================================
+     MAIN WORKSPACE
+     ============================================================ -->
+<main>
+  <div class="workspace">
+
+    <!-- Upload card -->
+    <section class="card">
+      <div class="card-header">
+        <p class="card-eyebrow">Step 01</p>
+        <h2>Upload a leaf</h2>
+      </div>
+      <div class="card-body">
+        <div class="upload-zone" id="uploadZone" tabindex="0" role="button" aria-label="Upload a leaf image">
+          <input type="file" id="fileInput" accept="image/*" aria-label="Choose image file">
+          <div id="uploadEmpty">
+            <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M12 16V4M12 4l-4 4M12 4l4 4" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <h3>Drag &amp; drop a photo here</h3>
+            <p>or click to browse · JPG, PNG up to 10MB</p>
+          </div>
+          <div id="uploadPreview" class="preview-wrap" style="display:none;">
+            <img class="preview-img" id="previewImg" alt="Uploaded leaf preview">
+            <span class="preview-filename" id="previewFilename"></span>
+          </div>
+        </div>
+      </div>
+      <div class="upload-footer">
+        <button class="analyze-btn" id="analyzeBtn" disabled>Analyze leaf</button>
+      </div>
+    </section>
+
+    <!-- Results card -->
+    <section class="card">
+      <div class="card-header">
+        <p class="card-eyebrow">Step 02</p>
+        <h2>Diagnosis</h2>
+      </div>
+      <div class="results-stage">
+        <div class="results-flip" id="resultsFlip">
+
+          <!-- FRONT FACE: empty / loading / error -->
+          <div class="flip-face flip-front" id="flipFront">
+            <div id="emptyState" class="empty-state">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3">
+                <path d="M12 21c-4-2-7-6-7-11a7 7 0 0 1 14 0c0 5-3 9-7 11Z"/>
+                <path d="M12 7v8M9 11h6"/>
+              </svg>
+              <p>Upload and analyze a leaf to see disease predictions here.</p>
+            </div>
+
+            <div id="loadingState" class="loading-state" style="display:none;">
+              <div class="spinner"></div>
+              <p>Running inference…</p>
+            </div>
+
+            <div id="errorState" class="error-state" style="display:none;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <circle cx="12" cy="12" r="9"/>
+                <path d="M12 8v5M12 16h.01" stroke-linecap="round"/>
+              </svg>
+              <h3>Couldn't reach the API</h3>
+              <p id="errorMessage">Check the API endpoint above and try again.</p>
+              <button class="btn btn-secondary" id="retryBtn">Try again</button>
+            </div>
+          </div>
+
+          <!-- BACK FACE: result content -->
+          <div class="flip-face flip-back" id="flipBack">
+            <div class="result-content" id="resultContent">
+              <!-- populated by showResult() -->
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<!-- ============================================================
+     TIPS SECTION
+     ============================================================ -->
+<section class="tips-section">
+  <div class="tips-header">
+    <p class="card-eyebrow">Field notes</p>
+    <h2>Get a sharper diagnosis</h2>
+  </div>
+  <div class="tips-grid">
+    <div class="tip-card">
+      <svg class="tip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4">
+        <circle cx="12" cy="12" r="4"/>
+        <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke-linecap="round"/>
+      </svg>
+      <h3>Shoot in natural light</h3>
+      <p>Overcast daylight evens out shadows and keeps leaf color true — avoid flash and harsh midday sun.</p>
+    </div>
+    <div class="tip-card">
+      <svg class="tip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4">
+        <rect x="3" y="3" width="18" height="18" rx="2"/>
+        <path d="M3 9h18M9 21V9"/>
+      </svg>
+      <h3>Fill the frame</h3>
+      <p>Get close enough that a single leaf fills most of the shot, laid flat against a plain background.</p>
+    </div>
+    <div class="tip-card">
+      <svg class="tip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4">
+        <path d="M12 2v6M12 22v-6M4.2 4.2l4.2 4.2M19.8 19.8l-4.2-4.2M4.2 19.8l4.2-4.2M19.8 4.2l-4.2 4.2"/>
+      </svg>
+      <h3>Capture early symptoms</h3>
+      <p>Spots, discoloration, and curling edges are most identifiable before a leaf is fully overtaken.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     FOOTER
+     ============================================================ -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand">Leaf<span>let</span></div>
+    <div class="stack-pills">
+      <span class="pill">HTML5</span>
+      <span class="pill">CSS3</span>
+      <span class="pill">Vanilla JS</span>
+      <span class="pill">Flask</span>
+      <span class="pill">TensorFlow / Keras</span>
+      <span class="pill">ngrok</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+/* ============================================================
+   STATE
+   ============================================================ */
+let currentFile = null;       // currently selected File object
+let currentBase64 = null;     // base64-encoded image data (no data: prefix)
+
+/* ============================================================
+   DOM REFERENCES
+   ============================================================ */
+const uploadZone      = document.getElementById('uploadZone');
+const fileInput       = document.getElementById('fileInput');
+const uploadEmpty     = document.getElementById('uploadEmpty');
+const uploadPreview    = document.getElementById('uploadPreview');
+const previewImg      = document.getElementById('previewImg');
+const previewFilename = document.getElementById('previewFilename');
+const analyzeBtn      = document.getElementById('analyzeBtn');
+
+const apiUrlInput  = document.getElementById('apiUrlInput');
+const saveUrlBtn   = document.getElementById('saveUrlBtn');
+const configStatus = document.getElementById('configStatus');
+
+const resultsFlip  = document.getElementById('resultsFlip');
+const emptyState   = document.getElementById('emptyState');
+const loadingState = document.getElementById('loadingState');
+const errorState   = document.getElementById('errorState');
+const errorMessage = document.getElementById('errorMessage');
+const resultContent = document.getElementById('resultContent');
+const retryBtn      = document.getElementById('retryBtn');
+
+/* ============================================================
+   INIT
+   ============================================================ */
+function init(){
+  // Restore saved API URL from localStorage
+  const savedUrl = localStorage.getItem('leaflet_api_url');
+  if (savedUrl) apiUrlInput.value = savedUrl;
+
+  spawnLeafParticles();
+  bindEvents();
+}
+
+function bindEvents(){
+  // Click-to-upload (click anywhere in the empty zone opens file picker)
+  uploadZone.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' '){
+      e.preventDefault();
+      fileInput.click();
+    }
+  });
+
+  fileInput.addEventListener('change', (e) => {
+    if (e.target.files && e.target.files[0]) handleFile(e.target.files[0]);
+  });
+
+  // Drag & drop
+  uploadZone.addEventListener('dragover', dragOver);
+  uploadZone.addEventListener('dragleave', dragLeave);
+  uploadZone.addEventListener('drop', dropFile);
+
+  analyzeBtn.addEventListener('click', analyze);
+  saveUrlBtn.addEventListener('click', saveUrl);
+  retryBtn.addEventListener('click', analyze);
+
+  apiUrlInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') saveUrl();
+  });
+}
+
+/* ============================================================
+   DRAG & DROP HANDLERS
+   ============================================================ */
+function dragOver(e){
+  e.preventDefault();
+  uploadZone.classList.add('drag-over');
+}
+
+function dragLeave(e){
+  e.preventDefault();
+  uploadZone.classList.remove('drag-over');
+}
+
+function dropFile(e){
+  e.preventDefault();
+  uploadZone.classList.remove('drag-over');
+  const files = e.dataTransfer.files;
+  if (files && files[0]) handleFile(files[0]);
+}
+
+/* ============================================================
+   FILE HANDLING
+   ============================================================ */
+function handleFile(file){
+  if (!file.type.startsWith('image/')){
+    alert('Please choose an image file.');
+    return;
+  }
+
+  currentFile = file;
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const dataUrl = e.target.result;               // e.g. "data:image/png;base64,iVBOR..."
+    currentBase64 = dataUrl.split(',')[1];          // strip the prefix for the API payload
+
+    previewImg.src = dataUrl;
+    previewFilename.textContent = file.name;
+
+    uploadEmpty.style.display = 'none';
+    uploadPreview.style.display = 'flex';
+    uploadZone.classList.add('has-image');
+
+    analyzeBtn.disabled = false;
+
+    resetResultsToEmpty();
+  };
+  reader.readAsDataURL(file);
+}
+
+/* ============================================================
+   API CONFIG
+   ============================================================ */
+function saveUrl(){
+  const url = apiUrlInput.value.trim().replace(/\/$/, ''); // strip trailing slash
+  localStorage.setItem('leaflet_api_url', url);
+
+  configStatus.classList.add('visible');
+  setTimeout(() => configStatus.classList.remove('visible'), 1800);
+}
+
+
+
+/* ============================================================
+   ANALYSIS FLOW
+   ============================================================ */
+async function analyze(){
+  if (!currentBase64){
+    alert('Please upload an image first.');
+    return;
+  }
+
+  const apiUrl = getApiUrl();
+
+  // No real API configured — fall back to demo mode so the UI stays testable
+  if (!apiUrl){
+    showDemo();
+    return;
+  }
+
+  showLoading();
+
+  try{
+    const response = await fetch(apiUrl + '/predict', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image: currentBase64 })
+    });
+
+    if (!response.ok){
+      throw new Error('Server responded with status ' + response.status);
+    }
+
+    const data = await response.json();
+
+    // Expected shape: { disease: "...", confidence: 0.0-1.0 or 0-100, predictions: [{label, confidence}, ...] }
+    const predictions = normalizePredictions(data);
+    const top = predictions[0];
+
+    showResult(top.label, top.confidence, predictions);
+
+  } catch (err){
+    console.error('Prediction request failed:', err);
+    showError(err.message || 'The API did not respond.');
+  }
+}
+
+/** Normalizes whatever shape the API returns into a sorted array of {label, confidence(0-100)} */
+function normalizePredictions(data){
+  let list = [];
+
+  if (Array.isArray(data.predictions)){
+    list = data.predictions.map(p => ({
+      label: p.label || p.class || p.name,
+      confidence: toPercent(p.confidence ?? p.probability ?? p.score)
+    }));
+  } else if (data.disease){
+    list = [{ label: data.disease, confidence: toPercent(data.confidence) }];
+  }
+
+  list.sort((a, b) => b.confidence - a.confidence);
+  return list;
+}
+
+function toPercent(val){
+  if (val == null) return 0;
+  return val <= 1 ? val * 100 : val;
+}
+
+/* ============================================================
+   UI STATE TRANSITIONS
+   ============================================================ */
+function showFrontFace(){
+  resultsFlip.classList.remove('flipped');
+}
+
+function resetResultsToEmpty(){
+  showFrontFace();
+  loadingState.style.display = 'none';
+  errorState.style.display = 'none';
+  emptyState.style.display = 'flex';
+}
+
+function showLoading(){
+  showFrontFace();
+  emptyState.style.display = 'none';
+  errorState.style.display = 'none';
+  loadingState.style.display = 'flex';
+  analyzeBtn.disabled = true;
+}
+
+function showError(message){
+  showFrontFace();
+  loadingState.style.display = 'none';
+  emptyState.style.display = 'none';
+  errorState.style.display = 'flex';
+  errorMessage.textContent = message || "Check the API endpoint above and try again.";
+  analyzeBtn.disabled = false;
+}
+
+/**
+ * Renders the diagnosis result and flips the card to reveal it.
+ * @param {string} disease - top predicted class name
+ * @param {number} confidence - 0-100 confidence value for the top class
+ * @param {Array<{label:string, confidence:number}>} allPredictions - full ranked list
+ */
+function showResult(disease, confidence, allPredictions){
+  const isHealthy = /healthy/i.test(disease);
+  const pct = Math.round(confidence * 10) / 10;
+
+  let html = `
+    <div class="result-headline">
+      <div class="disease-icon ${isHealthy ? 'healthy' : 'diseased'}">${isHealthy ? '🌿' : '🍂'}</div>
+      <div>
+        <h3>${escapeHtml(disease)}</h3>
+        <span class="result-sub">${isHealthy ? 'No action needed' : 'Disease detected'}</span>
+      </div>
+    </div>
+
+    <div class="confidence-block">
+      <div class="confidence-row">
+        <span>Model confidence</span>
+        <span class="confidence-pct">${pct}%</span>
+      </div>
+      <div class="confidence-track">
+        <div class="confidence-fill ${isHealthy ? 'healthy' : 'diseased'}" id="mainConfidenceFill"></div>
+      </div>
+    </div>
+
+    <div class="predictions-list">
+      <h4>All predictions</h4>
+      ${allPredictions.map((p, i) => `
+        <div class="prediction-row">
+          <span class="prediction-name">${escapeHtml(p.label)}</span>
+          <span class="prediction-pct">${(Math.round(p.confidence * 10) / 10)}%</span>
+        </div>
+        <div class="prediction-track">
+          <div class="prediction-fill" data-fill="${p.confidence}" id="predFill${i}"></div>
+        </div>
+      `).join('')}
+    </div>
+
+    <div class="result-footer-actions">
+      <button class="btn btn-secondary" onclick="resetUpload()">Analyze another leaf</button>
+    </div>
+  `;
+
+  resultContent.innerHTML = html;
+
+  // Flip the card to reveal the result face
+  requestAnimationFrame(() => {
+    resultsFlip.classList.add('flipped');
+  });
+
+  // Animate bars from 0 -> target after the flip settles
+  setTimeout(() => {
+    const mainFill = document.getElementById('mainConfidenceFill');
+    if (mainFill) mainFill.style.width = pct + '%';
+
+    allPredictions.forEach((p, i) => {
+      const el = document.getElementById('predFill' + i);
+      if (el) el.style.width = p.confidence + '%';
+    });
+  }, 50);
+
+  analyzeBtn.disabled = false;
+}
+
+function resetUpload(){
+  currentFile = null;
+  currentBase64 = null;
+  fileInput.value = '';
+  uploadEmpty.style.display = 'block';
+  uploadPreview.style.display = 'none';
+  uploadZone.classList.remove('has-image');
+  analyzeBtn.disabled = true;
+  resetResultsToEmpty();
+}
+
+function escapeHtml(str){
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+/* ============================================================
+   DEMO MODE — used when no API URL is configured
+   ============================================================ */
+function showDemo(){
+  showLoading();
+
+  setTimeout(() => {
+    const demoPredictions = [
+      { label: 'Tomato — Early Blight', confidence: 87.3 },
+      { label: 'Tomato — Septoria Leaf Spot', confidence: 7.1 },
+      { label: 'Tomato — Healthy', confidence: 3.8 },
+      { label: 'Tomato — Late Blight', confidence: 1.8 }
+    ];
+    showResult(demoPredictions[0].label, demoPredictions[0].confidence, demoPredictions);
+  }, 1200);
+}
+
+/* ============================================================
+   AMBIENT HERO ANIMATION — floating leaf particles
+   ============================================================ */
+function spawnLeafParticles(){
+  const container = document.getElementById('leafParticles');
+  const leafSvg = (size) => `
+    <svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12 2C7 2 3 6 3 12c0 5 4 9 9 10 5-1 9-5 9-10C21 6 17 2 12 2Zm0 2c1 4 1 12 0 16-4-1-7-4-7-8s3-7 7-8Z"/>
+    </svg>`;
+
+  const count = 9;
+  for (let i = 0; i < count; i++){
+    const leaf = document.createElement('div');
+    leaf.className = 'leaf-particle';
+    const size = 14 + Math.random() * 16;
+    const left = Math.random() * 100;
+    const duration = 14 + Math.random() * 12;
+    const delay = Math.random() * -duration;
+    const driftX = (Math.random() * 80 - 40) + 'px';
+    const driftR = (Math.random() * 360) + 'deg';
+
+    leaf.style.left = left + '%';
+    leaf.style.bottom = '0';
+    leaf.style.width = size + 'px';
+    leaf.style.height = size + 'px';
+    leaf.style.animationDuration = duration + 's';
+    leaf.style.animationDelay = delay + 's';
+    leaf.style.setProperty('--drift-x', driftX);
+    leaf.style.setProperty('--drift-r', driftR);
+    leaf.innerHTML = leafSvg(size);
+
+    container.appendChild(leaf);
+  }
+}
+
+/* ============================================================
+   BOOT
+   ============================================================ */
+init();
+
+</script>
+</body>
+</html>

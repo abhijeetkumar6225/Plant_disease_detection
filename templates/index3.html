@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Plant Disease Detection</title>
+
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Arial, Helvetica, sans-serif;
+}
+
+body{
+    background:#e8f5e9;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    min-height:100vh;
+}
+
+.container{
+    background:white;
+    width:500px;
+    padding:30px;
+    border-radius:15px;
+    box-shadow:0 5px 15px rgba(0,0,0,0.2);
+    text-align:center;
+}
+
+h1{
+    color:#2e7d32;
+    margin-bottom:20px;
+}
+
+input[type=file]{
+    margin:15px 0;
+}
+
+button{
+    padding:12px 25px;
+    border:none;
+    border-radius:8px;
+    background:#2e7d32;
+    color:white;
+    cursor:pointer;
+    font-size:16px;
+}
+
+button:hover{
+    background:#1b5e20;
+}
+
+img{
+    margin-top:20px;
+    max-width:250px;
+    border-radius:10px;
+    border:2px solid #ddd;
+}
+
+.result{
+    margin-top:25px;
+    padding:15px;
+    background:#f1f8e9;
+    border-radius:10px;
+}
+
+.reset-btn{
+    margin-top:20px;
+    background:#d32f2f;
+}
+
+.reset-btn:hover{
+    background:#b71c1c;
+}
+</style>
+
+</head>
+<body>
+
+<div class="container">
+
+<h1>🌿 Plant Disease Detection</h1>
+
+<form action="/predict" method="POST" enctype="multipart/form-data">
+
+<input
+type="file"
+name="image"
+id="imageInput"
+accept="image/*"
+required>
+
+<br><br>
+
+<img id="preview" style="display:none;">
+
+<br><br>
+
+<button type="submit">
+Predict Disease
+</button>
+
+</form>
+
+{% if uploaded_image %}
+
+<div class="result">
+
+<h2>Prediction</h2>
+
+<img src="{{ uploaded_image }}">
+
+<h3 style="margin-top:15px;">
+Disease:
+</h3>
+
+<p>{{ disease }}</p>
+
+<h3 style="margin-top:15px;">
+Confidence:
+</h3>
+
+<p>{{ confidence }}</p>
+
+<br>
+
+<button
+class="reset-btn"
+onclick="window.location.href='/'">
+Analyze Another Image
+</button>
+
+</div>
+
+{% endif %}
+
+{% if error %}
+<p style="color:red; margin-top:20px;">
+{{ error }}
+</p>
+{% endif %}
+
+</div>
+
+<script>
+
+const input=document.getElementById("imageInput");
+const preview=document.getElementById("preview");
+
+input.addEventListener("change",function(){
+
+const file=this.files[0];
+
+if(file){
+
+preview.style.display="block";
+
+preview.src=URL.createObjectURL(file);
+
+}
+
+});
+
+</script>
+
+</body>
+</html>
